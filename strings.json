@@ -48,6 +48,19 @@
           "username": "[%key:component::homeworks::config::step::reconfigure::data_description::username%]"
         },
         "description": "Add a Lutron Homeworks controller"
+      },
+      "auto_discover": {
+        "title": "Auto-discover devices",
+        "description": "Scan the system for devices",
+        "data": {
+          "start_addr": "Start address",
+          "end_addr": "End address"
+        }
+      },
+      "select_discovered": {
+        "title": "Select discovered devices",
+        "description": "Choose which discovered devices to add",
+        "data": {}
       }
     }
   },
