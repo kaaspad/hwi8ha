@@ -430,6 +430,42 @@ async def validate_remove_keypad_light(
     return {}
 
 
+async def async_step_auto_discover(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle auto-discovery step."""
+    if not user_input:
+        return {}
+    
+    try:
+        validate_addr(user_input["start_addr"])
+        validate_addr(user_input["end_addr"])
+    except vol.Invalid as err:
+        raise SchemaFlowError("invalid_addr") from err
+        
+    return user_input
+
+async def get_select_discovered_schema(
+    handler: SchemaCommonFlowHandler
+) -> vol.Schema:
+    """Get schema for discovered devices selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_INDEX): cv.multi_select(
+                {
+                    str(index): f"{device.name} ({device.addr})"
+                    for index, device in enumerate(handler.flow_state.get("discovered_devices", []))
+                }
+            )
+        }
+    )
+
+async def validate_select_discovered(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Validate selected discovered devices."""
+    return user_input
+
 DATA_SCHEMA_ADD_CONTROLLER = vol.Schema(
     {
         vol.Required(
@@ -550,7 +586,7 @@ OPTIONS_FLOW = {
     "auto_discover": SchemaFlowFormStep(
         {
             vol.Optional("start_addr", default="[00:00:00:00]"): str,
-            vol.Optional("end_addr", default="[99:99:99:99]"): str,
+            vol.Optional("end_addr", default="[99:99:99:99]"): str
         },
         suggested_values=None,
         validate_user_input=async_step_auto_discover,
