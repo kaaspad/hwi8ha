@@ -227,9 +227,8 @@ async def validate_add_switch(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
     """Validate switch input."""
-    user_input["switch_type"] = user_input.get("switch_type", "cco")
     _validate_address(handler, user_input[CONF_ADDR])
-    items = handler.options[CONF_SWITCHES]
+    items = handler.options.setdefault(CONF_SWITCHES, [])
     items.append(user_input)
     return {}
 
