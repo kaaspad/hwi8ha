@@ -21,7 +21,7 @@ from .const import (
     CONF_CCI,
     DOMAIN,
 )
-from .pyhomeworks.pyhomeworks import HW_CCO_CHANGED, Homeworks
+from .pyhomeworks.pyhomeworks import HW_CCO_CHANGED, HW_CCI_CHANGED, Homeworks
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,6 +92,9 @@ class HomeworksSwitch(HomeworksEntity, SwitchEntity):
     @callback
     def _update_callback(self, msg_type: str, values: list[Any]) -> None:
         """Process device specific messages."""
-        if msg_type == HW_CCO_CHANGED:
+        if (
+            (self._switch_type == "cco" and msg_type == HW_CCO_CHANGED) or
+            (self._switch_type == "cci" and msg_type == HW_CCI_CHANGED)
+        ):
             self._state = values[1]
             self.async_write_ha_state()

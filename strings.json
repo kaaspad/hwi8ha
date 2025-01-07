@@ -149,6 +149,32 @@
         "description": "Select lights to remove",
         "title": "[%key:component::homeworks::options::step::init::menu_options::remove_light%]"
       },
+      "add_switch": {
+        "data": {
+          "addr": "Address",
+          "name": "Name",
+          "switch_type": "Switch Type (CCO/CCI)"
+        },
+        "description": "Add a Contact Closure Output (CCO) or Input (CCI)",
+        "title": "Add switch"
+      },
+      "edit_switch": {
+        "data": {
+          "addr": "[%key:component::homeworks::options::step::add_switch::data::addr%]",
+          "name": "[%key:component::homeworks::options::step::add_switch::data::name%]",
+          "switch_type": "[%key:component::homeworks::options::step::add_switch::data::switch_type%]"
+        },
+        "description": "Edit a switch",
+        "title": "Edit switch"
+      },
+      "remove_switch": {
+        "description": "Select switches to remove",
+        "title": "Remove switch"
+      },
+      "select_edit_switch": {
+        "description": "Select a switch to configure",
+        "title": "Configure switch"
+      },
       "select_edit_button": {
         "title": "[%key:component::homeworks::options::step::edit_keypad::menu_options::select_edit_button%]"
       },
