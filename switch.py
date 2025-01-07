@@ -53,10 +53,10 @@ class HomeworksSwitch(HomeworksEntity, SwitchEntity):
     def __init__(
         self,
         controller: Homeworks,
+        switch_type: str = "cco",  # Default to CCO if not specified
         controller_id: str,
         addr: str,
         name: str,
-        switch_type: str = "cco",
     ) -> None:
         """Create device with Address and name."""
         super().__init__(controller, controller_id, addr, 0, name)

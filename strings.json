@@ -153,18 +153,22 @@
         "data": {
           "addr": "Address",
           "name": "Name",
-          "switch_type": "Switch Type (CCO/CCI)"
+          "switch_type": "Switch Type"
+        },
+        "data_description": {
+          "addr": "Switch address, must be formatted as `[##:##:##:##]`",
+          "switch_type": "Select CCO for Contact Closure Output or CCI for Contact Closure Input"
         },
         "description": "Add a Contact Closure Output (CCO) or Input (CCI)",
         "title": "Add switch"
       },
       "edit_switch": {
         "data": {
-          "addr": "[%key:component::homeworks::options::step::add_switch::data::addr%]",
-          "name": "[%key:component::homeworks::options::step::add_switch::data::name%]",
-          "switch_type": "[%key:component::homeworks::options::step::add_switch::data::switch_type%]"
+          "addr": "Address",
+          "name": "Name",
+          "switch_type": "Switch Type"
         },
-        "description": "Edit a switch",
+        "description": "Edit switch configuration",
         "title": "Edit switch"
       },
       "remove_switch": {
