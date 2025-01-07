@@ -55,7 +55,18 @@
                     "name": "Name",
                     "switch_type": "Switch Type (CCO/CCI)"
                 },
+                "data_description": {
+                    "addr": "Switch address, must be formatted as `[##:##:##:##]`",
+                    "switch_type": "Select CCO for Contact Closure Output or CCI for Contact Closure Input"
+                },
+                "description": "Add a Contact Closure Output (CCO) or Input (CCI)",
                 "title": "Add switch"
+            },
+            "edit_switch": {
+                "data": {
+                    "switch_type": "Switch Type"
+                },
+                "title": "Configure switch"
             },
             "add_switch": {
                 "data": {

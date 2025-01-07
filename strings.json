@@ -48,6 +48,25 @@
           "username": "[%key:component::homeworks::config::step::reconfigure::data_description::username%]"
         },
         "description": "Add a Lutron Homeworks controller"
+      },
+      "add_switch": {
+        "data": {
+          "addr": "Address",
+          "name": "Name",
+          "switch_type": "Switch Type"
+        },
+        "data_description": {
+          "addr": "Switch address, must be formatted as `[##:##:##:##]`",
+          "switch_type": "Select CCO for Contact Closure Output or CCI for Contact Closure Input"
+        },
+        "description": "Add a Contact Closure Output (CCO) or Input (CCI)",
+        "title": "Add switch"
+      },
+      "edit_switch": {
+        "data": {
+          "switch_type": "Switch Type"
+        },
+        "title": "Configure switch"
       }
     }
   },
@@ -148,28 +167,6 @@
       "remove_light": {
         "description": "Select lights to remove",
         "title": "[%key:component::homeworks::options::step::init::menu_options::remove_light%]"
-      },
-      "add_switch": {
-        "data": {
-          "addr": "Address",
-          "name": "Name",
-          "switch_type": "Switch Type"
-        },
-        "data_description": {
-          "addr": "Switch address, must be formatted as `[##:##:##:##]`",
-          "switch_type": "Select CCO for Contact Closure Output or CCI for Contact Closure Input"
-        },
-        "description": "Add a Contact Closure Output (CCO) or Input (CCI)",
-        "title": "Add switch"
-      },
-      "edit_switch": {
-        "data": {
-          "addr": "Address",
-          "name": "Name",
-          "switch_type": "Switch Type"
-        },
-        "description": "Edit switch configuration",
-        "title": "Edit switch"
       },
       "remove_switch": {
         "description": "Select switches to remove",

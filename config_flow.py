@@ -604,6 +604,7 @@ DATA_SCHEMA_ADD_BUTTON = vol.Schema(
 )
 DATA_SCHEMA_EDIT_BUTTON = vol.Schema(BUTTON_EDIT)
 DATA_SCHEMA_EDIT_LIGHT = vol.Schema(LIGHT_EDIT)
+DATA_SCHEMA_EDIT_SWITCH = vol.Schema(BUTTON_EDIT)
 
 OPTIONS_FLOW = {
     "init": SchemaFlowMenuStep(
@@ -677,7 +678,7 @@ OPTIONS_FLOW = {
         next_step="edit_switch",
     ),
     "edit_switch": SchemaFlowFormStep(
-        DATA_SCHEMA_EDIT_LIGHT,
+        DATA_SCHEMA_EDIT_SWITCH,
         suggested_values=get_edit_switch_suggested_values,
         validate_user_input=validate_switch_edit,
     ),
