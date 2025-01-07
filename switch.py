@@ -17,6 +17,8 @@ from .const import (
     CONF_ADDR,
     CONF_CONTROLLER_ID,
     CONF_SWITCHES,
+    CONF_CCO,
+    CONF_CCI,
     DOMAIN,
 )
 from .pyhomeworks.pyhomeworks import HW_CCO_CHANGED, Homeworks
@@ -32,12 +34,14 @@ async def async_setup_entry(
     controller = data.controller
     controller_id = entry.options[CONF_CONTROLLER_ID]
     entities = []
+    
     for switch in entry.options.get(CONF_SWITCHES, []):
         entity = HomeworksSwitch(
             controller,
             controller_id,
             switch[CONF_ADDR],
             switch[CONF_NAME],
+            switch.get("switch_type", "cco"),  # Default to CCO if not specified
         )
         entities.append(entity)
     async_add_entities(entities, True)
@@ -52,6 +56,7 @@ class HomeworksSwitch(HomeworksEntity, SwitchEntity):
         controller_id: str,
         addr: str,
         name: str,
+        switch_type: str = "cco",
     ) -> None:
         """Create device with Address and name."""
         super().__init__(controller, controller_id, addr, 0, name)
@@ -60,6 +65,7 @@ class HomeworksSwitch(HomeworksEntity, SwitchEntity):
             name=name,
         )
         self._state = False
+        self._switch_type = switch_type
 
     async def async_added_to_hass(self) -> None:
         """Call when entity is added to Home Assistant."""

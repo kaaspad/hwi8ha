@@ -30,7 +30,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
-from .const import CONF_ADDR, CONF_CONTROLLER_ID, CONF_KEYPADS, CONF_SWITCHES, DOMAIN
+from .const import CONF_ADDR, CONF_CONTROLLER_ID, CONF_KEYPADS, CONF_SWITCHES, CONF_CCO, CONF_CCI, DOMAIN
 from .pyhomeworks import exceptions as hw_exceptions
 from .pyhomeworks.pyhomeworks import (
     HW_BUTTON_PRESSED,
@@ -306,3 +306,33 @@ class HomeworksKeypad:
         Debounced to not storm the controller during setup.
         """
         await self._debouncer.async_call()
+
+
+class HomeworksSwitch:
+    """When you want signals instead of entities for switches."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        controller: Homeworks,
+        controller_id: str,
+        addr: str,
+        name: str,
+    ) -> None:
+        """Register callback that will be used for signals."""
+        self._addr = addr
+        self._controller = controller
+        self._hass = hass
+        self._name = name
+        self._id = slugify(self._name)
+        signal = f"homeworks_entity_{controller_id}_{self._addr}"
+        _LOGGER.debug("connecting %s", signal)
+        self.unsubscribe = async_dispatcher_connect(
+            self._hass, signal, self._update_callback
+        )
+
+    @callback
+    def _update_callback(self, msg_type: str, values: list[Any]) -> None:
+        """Fire events for switch state changes."""
+        # Implementation for handling switch state changes goes here
+        pass

@@ -19,7 +19,7 @@
                 "description": "Lutron Homeworks is no longer configured through configuration.yaml.\n\nPlease fill in the form to import the existing configuration to the UI."
             },
             "import_finish": {
-                "description": "The existing YAML configuration has succesfully been imported.\n\nYou can now remove the `homeworks` configuration from your configuration.yaml file."
+                "description": "The existing YAML configuration has successfully been imported.\n\nYou can now remove the `homeworks` configuration from your configuration.yaml file."
             },
             "reconfigure": {
                 "data": {
@@ -48,6 +48,14 @@
                     "username": "Optional username, leave blank if your system does not need login credentials"
                 },
                 "description": "Add a Lutron Homeworks controller"
+            },
+            "add_switch": {
+                "data": {
+                    "addr": "Address",
+                    "name": "Name",
+                    "switch_type": "Switch Type"
+                },
+                "title": "Add switch"
             }
         }
     },

@@ -52,6 +52,8 @@ from .const import (
     CONF_RATE,
     CONF_RELEASE_DELAY,
     CONF_SWITCHES,
+    CONF_CCO,
+    CONF_CCI,
     DEFAULT_BUTTON_NAME,
     DEFAULT_KEYPAD_NAME,
     DEFAULT_LIGHT_NAME,
@@ -107,6 +109,7 @@ DATA_SCHEMA_ADD_SWITCH = vol.Schema(
     {
         vol.Optional(CONF_NAME, default=DEFAULT_SWITCH_NAME): TextSelector(),
         vol.Required(CONF_ADDR): TextSelector(),
+        vol.Optional("switch_type", default="cco"): vol.In(["cco", "cci"]),
     }
 )
 

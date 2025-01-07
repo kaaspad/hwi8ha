@@ -259,4 +259,5 @@ class Homeworks(Thread):
         self._send("KBMON")  # Monitor keypad events
         self._send("GSMON")  # Monitor GRAFIKEYE scenes
         self._send("DLMON")  # Monitor dimmer levels
-        self._send("KLMON")  # Monitor keypad LED states
+        self._send("CCOMON")  # Monitor CCO states
+        self._send("CCIMON")  # Monitor CCI states
