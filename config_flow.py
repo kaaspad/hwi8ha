@@ -665,27 +665,6 @@ OPTIONS_FLOW = {
         suggested_values=None,
         validate_user_input=partial(validate_remove_keypad_light, key=CONF_KEYPADS),
     ),
-    "add_light": SchemaFlowFormStep(
-        DATA_SCHEMA_ADD_LIGHT,
-        suggested_values=None,
-        validate_user_input=validate_add_light,
-    ),
-    "select_edit_light": SchemaFlowFormStep(
-        get_select_light_schema,
-        suggested_values=None,
-        validate_user_input=validate_select_keypad_light,
-        next_step="edit_light",
-    ),
-    "edit_light": SchemaFlowFormStep(
-        DATA_SCHEMA_EDIT_LIGHT,
-        suggested_values=get_edit_light_suggested_values,
-        validate_user_input=validate_light_edit,
-    ),
-    "remove_light": SchemaFlowFormStep(
-        partial(get_remove_keypad_light_schema, key=CONF_DIMMERS),
-        suggested_values=None,
-        validate_user_input=partial(validate_remove_keypad_light, key=CONF_DIMMERS),
-    ),
     "add_switch": SchemaFlowFormStep(
         DATA_SCHEMA_ADD_SWITCH,
         suggested_values=None,
@@ -706,6 +685,27 @@ OPTIONS_FLOW = {
         partial(get_remove_keypad_light_schema, key=CONF_SWITCHES),
         suggested_values=None,
         validate_user_input=partial(validate_remove_keypad_light, key=CONF_SWITCHES),
+    ),
+    "add_light": SchemaFlowFormStep(
+        DATA_SCHEMA_ADD_LIGHT,
+        suggested_values=None,
+        validate_user_input=validate_add_light,
+    ),
+    "select_edit_light": SchemaFlowFormStep(
+        get_select_light_schema,
+        suggested_values=None,
+        validate_user_input=validate_select_keypad_light,
+        next_step="edit_light",
+    ),
+    "edit_light": SchemaFlowFormStep(
+        DATA_SCHEMA_EDIT_LIGHT,
+        suggested_values=get_edit_light_suggested_values,
+        validate_user_input=validate_light_edit,
+    ),
+    "remove_light": SchemaFlowFormStep(
+        partial(get_remove_keypad_light_schema, key=CONF_DIMMERS),
+        suggested_values=None,
+        validate_user_input=partial(validate_remove_keypad_light, key=CONF_DIMMERS),
     ),
     "auto_discover": SchemaFlowFormStep(
         {
