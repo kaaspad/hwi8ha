@@ -11,6 +11,8 @@ import voluptuous as vol
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.const import (
     CONF_HOST,
@@ -49,13 +51,16 @@ from .const import (
     CONF_NUMBER,
     CONF_RATE,
     CONF_RELEASE_DELAY,
+    CONF_SWITCHES,
     DEFAULT_BUTTON_NAME,
     DEFAULT_KEYPAD_NAME,
     DEFAULT_LIGHT_NAME,
+    DEFAULT_SWITCH_NAME,
     DOMAIN,
 )
 from .pyhomeworks import exceptions as hw_exceptions
 from .pyhomeworks.pyhomeworks import Homeworks
+from .pyhomeworks.discovery import HomeworksDiscovery, DiscoveredDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -98,6 +103,12 @@ BUTTON_EDIT: VolDictType = {
     ),
 }
 
+DATA_SCHEMA_ADD_SWITCH = vol.Schema(
+    {
+        vol.Optional(CONF_NAME, default=DEFAULT_SWITCH_NAME): TextSelector(),
+        vol.Required(CONF_ADDR): TextSelector(),
+    }
+)
 
 validate_addr = cv.matches_regex(r"\[(?:\d\d:){0,2}\d\d:\d\d:\d\d\]")
 
@@ -209,6 +220,16 @@ async def validate_add_button(
     return {}
 
 
+async def validate_add_switch(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Validate switch input."""
+    _validate_address(handler, user_input[CONF_ADDR])
+    items = handler.options[CONF_SWITCHES]
+    items.append(user_input)
+    return {}
+
+
 async def validate_add_keypad(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
@@ -280,6 +301,20 @@ async def get_select_light_schema(handler: SchemaCommonFlowHandler) -> vol.Schem
     )
 
 
+async def get_select_switch_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return schema for selecting a switch."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_INDEX): vol.In(
+                {
+                    str(index): f"{config[CONF_NAME]} ({config[CONF_ADDR]})"
+                    for index, config in enumerate(handler.options[CONF_SWITCHES])
+                },
+            )
+        }
+    )
+
+
 async def validate_select_button(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
@@ -313,6 +348,14 @@ async def get_edit_light_suggested_values(
     return dict(handler.options[CONF_DIMMERS][idx])
 
 
+async def get_edit_switch_suggested_values(
+    handler: SchemaCommonFlowHandler,
+) -> dict[str, Any]:
+    """Return suggested values for switch editing."""
+    idx: int = handler.flow_state["_idx"]
+    return dict(handler.options[CONF_SWITCHES][idx])
+
+
 async def validate_button_edit(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
@@ -334,6 +377,17 @@ async def validate_light_edit(
     # In this case, we want to add a sub-item so we update the options directly.
     idx: int = handler.flow_state["_idx"]
     handler.options[CONF_DIMMERS][idx].update(user_input)
+    return {}
+
+
+async def validate_switch_edit(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Update edited switch."""
+    # Standard behavior is to merge the result with the options.
+    # In this case, we want to add a sub-item so we update the options directly.
+    idx: int = handler.flow_state["_idx"]
+    handler.options[CONF_SWITCHES][idx].update(user_input)
     return {}
 
 
@@ -363,6 +417,23 @@ async def get_remove_keypad_light_schema(
                 {
                     str(index): f"{config[CONF_NAME]} ({config[CONF_ADDR]})"
                     for index, config in enumerate(handler.options[key])
+                },
+            )
+        }
+    )
+
+
+async def get_remove_switch_schema(
+    handler: SchemaCommonFlowHandler
+) -> vol.Schema:
+    """Return schema for switch removal."""
+    switches: list[dict] = handler.options[CONF_SWITCHES]
+    return vol.Schema(
+        {
+            vol.Required(CONF_INDEX): cv.multi_select(
+                {
+                    str(index): f"{config[CONF_NAME]} ({config[CONF_ADDR]})"
+                    for index, config in enumerate(switches)
                 },
             )
         }
@@ -401,6 +472,32 @@ async def validate_remove_button(
     return {}
 
 
+async def validate_remove_switch(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Validate remove switch."""
+    removed_indexes: set[str] = set(user_input[CONF_INDEX])
+
+    # Standard behavior is to merge the result with the options.
+    # In this case, we want to remove sub-items so we update the options directly.
+    entity_registry = er.async_get(handler.parent_handler.hass)
+    items: list[dict[str, Any]] = []
+    item: dict[str, Any]
+    for index, item in enumerate(handler.options[CONF_SWITCHES]):
+        if str(index) not in removed_indexes:
+            items.append(item)
+        if entity_id := entity_registry.async_get_entity_id(
+            SWITCH_DOMAIN,
+            DOMAIN,
+            calculate_unique_id(
+                handler.options[CONF_CONTROLLER_ID], item[CONF_ADDR], 0
+            ),
+        ):
+            entity_registry.async_remove(entity_id)
+    handler.options[CONF_SWITCHES] = items
+    return {}
+
+
 async def validate_remove_keypad_light(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any], *, key: str
 ) -> dict[str, Any]:
@@ -428,6 +525,42 @@ async def validate_remove_keypad_light(
     handler.options[key] = items
     return {}
 
+
+async def async_step_auto_discover(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle auto-discovery step."""
+    if not user_input:
+        return {}
+    
+    try:
+        validate_addr(user_input["start_addr"])
+        validate_addr(user_input["end_addr"])
+    except vol.Invalid as err:
+        raise SchemaFlowError("invalid_addr") from err
+        
+    return user_input
+
+async def get_select_discovered_schema(
+    handler: SchemaCommonFlowHandler
+) -> vol.Schema:
+    """Get schema for discovered devices selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_INDEX): cv.multi_select(
+                {
+                    str(index): f"{device.name} ({device.addr})"
+                    for index, device in enumerate(handler.flow_state.get("discovered_devices", []))
+                }
+            )
+        }
+    )
+
+async def validate_select_discovered(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Validate selected discovered devices."""
+    return user_input
 
 DATA_SCHEMA_ADD_CONTROLLER = vol.Schema(
     {
@@ -477,6 +610,11 @@ OPTIONS_FLOW = {
             "add_light",
             "select_edit_light",
             "remove_light",
+            "add_switch",
+            "select_edit_switch",
+            "remove_switch",
+            "auto_discover",
+            "select_discovered",
         ]
     ),
     "add_keypad": SchemaFlowFormStep(
@@ -543,6 +681,40 @@ OPTIONS_FLOW = {
         partial(get_remove_keypad_light_schema, key=CONF_DIMMERS),
         suggested_values=None,
         validate_user_input=partial(validate_remove_keypad_light, key=CONF_DIMMERS),
+    ),
+    "add_switch": SchemaFlowFormStep(
+        DATA_SCHEMA_ADD_SWITCH,
+        suggested_values=None,
+        validate_user_input=validate_add_switch,
+    ),
+    "select_edit_switch": SchemaFlowFormStep(
+        get_select_switch_schema,
+        suggested_values=None,
+        validate_user_input=validate_select_keypad_light,
+        next_step="edit_switch",
+    ),
+    "edit_switch": SchemaFlowFormStep(
+        DATA_SCHEMA_EDIT_LIGHT,
+        suggested_values=get_edit_switch_suggested_values,
+        validate_user_input=validate_switch_edit,
+    ),
+    "remove_switch": SchemaFlowFormStep(
+        partial(get_remove_keypad_light_schema, key=CONF_SWITCHES),
+        suggested_values=None,
+        validate_user_input=partial(validate_remove_keypad_light, key=CONF_SWITCHES),
+    ),
+    "auto_discover": SchemaFlowFormStep(
+        {
+            vol.Optional("start_addr", default="[00:00:00:00]"): str,
+            vol.Optional("end_addr", default="[99:99:99:99]"): str,
+        },
+        suggested_values=None,
+        validate_user_input=async_step_auto_discover,
+    ),
+    "select_discovered": SchemaFlowFormStep(
+        get_select_discovered_schema,
+        suggested_values=None,
+        validate_user_input=validate_select_discovered,
     ),
 }
 
@@ -629,7 +801,7 @@ class HomeworksConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     {CONF_HOST: user_input[CONF_HOST], CONF_PORT: user_input[CONF_PORT]}
                 )
                 name = user_input.pop(CONF_NAME)
-                user_input |= {CONF_DIMMERS: [], CONF_KEYPADS: []}
+                user_input |= {CONF_DIMMERS: [], CONF_KEYPADS: [], CONF_SWITCHES: []}
                 return self.async_create_entry(title=name, data={}, options=user_input)
 
         return self.async_show_form(
@@ -637,6 +809,74 @@ class HomeworksConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             data_schema=DATA_SCHEMA_ADD_CONTROLLER,
             errors=errors,
         )
+
+    async def async_step_auto_discover(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle auto-discovery of devices."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="auto_discover",
+                data_schema=vol.Schema({
+                    vol.Optional("start_addr", default="[00:00:00:00]"): str,
+                    vol.Optional("end_addr", default="[99:99:99:99]"): str,
+                }),
+            )
+
+        # Start discovery process
+        data: HomeworksData = self.hass.data[DOMAIN][self.config_entry.entry_id]
+        discovery = HomeworksDiscovery(data.controller)
+        
+        discovered = await discovery.discover_devices(
+            start_addr=user_input["start_addr"],
+            end_addr=user_input["end_addr"],
+        )
+
+        # Store discovered devices for the next step
+        self.discovered_devices = discovered
+        return await self.async_step_select_discovered()
+
+    async def async_step_select_discovered(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle selection of discovered devices."""
+        if user_input is None:
+            devices = []
+            for addr, device in self.discovered_devices.items():
+                devices.append({
+                    "addr": addr,
+                    "type": device.device_type,
+                    "name": device.name,
+                    "selected": device.selected
+                })
+            
+            return self.async_show_form(
+                step_id="select_discovered",
+                data_schema=vol.Schema({
+                    vol.Required(f"device_{addr}"): bool
+                    for addr in self.discovered_devices
+                }),
+            )
+
+        # Process selected devices
+        for key, value in user_input.items():
+            if key.startswith("device_"):
+                addr = key[7:]  # Remove "device_" prefix
+                device = self.discovered_devices[addr]
+                if value:  # If device is selected
+                    if device.device_type == "light":
+                        self.options[CONF_DIMMERS].append({
+                            CONF_ADDR: addr,
+                            CONF_NAME: device.name,
+                            CONF_RATE: DEFAULT_FADE_RATE
+                        })
+                    elif device.device_type in ["cco", "cci"]:
+                        self.options[CONF_SWITCHES].append({
+                            CONF_ADDR: addr,
+                            CONF_NAME: device.name
+                        })
+
+        return self.async_create_entry(title="", data=self.options)
 
     @staticmethod
     @callback
