@@ -53,9 +53,16 @@
                 "data": {
                     "addr": "Address",
                     "name": "Name",
-                    "switch_type": "Switch Type"
+                    "switch_type": "Switch Type (CCO/CCI)"
                 },
-                "description": "Add a Contact Closure Output (CCO) or Input (CCI)",
+                "title": "Add switch"
+            },
+            "add_switch": {
+                "data": {
+                    "addr": "Address",
+                    "name": "Name",
+                    "switch_type": "Switch Type (CCO/CCI)"
+                },
                 "title": "Add switch"
             }
         }

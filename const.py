@@ -17,6 +17,7 @@ CONF_LED = "led"
 CONF_NUMBER = "number"
 CONF_RATE = "rate"
 CONF_RELEASE_DELAY = "release_delay"
+CONF_NAME = "name"
 
 DEFAULT_BUTTON_NAME = "Homeworks button"
 DEFAULT_KEYPAD_NAME = "Homeworks keypad"
