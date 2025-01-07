@@ -586,7 +586,7 @@ OPTIONS_FLOW = {
     "auto_discover": SchemaFlowFormStep(
         {
             vol.Optional("start_addr", default="[00:00:00:00]"): str,
-            vol.Optional("end_addr", default="[99:99:99:99]"): str
+            vol.Optional("end_addr", default="[99:99:99:99]"): str,
         },
         suggested_values=None,
         validate_user_input=async_step_auto_discover,
