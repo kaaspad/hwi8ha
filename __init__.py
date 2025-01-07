@@ -30,18 +30,20 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
-from .const import CONF_ADDR, CONF_CONTROLLER_ID, CONF_KEYPADS, DOMAIN
+from .const import CONF_ADDR, CONF_CONTROLLER_ID, CONF_KEYPADS, CONF_SWITCHES, DOMAIN
 from .pyhomeworks import exceptions as hw_exceptions
 from .pyhomeworks.pyhomeworks import (
     HW_BUTTON_PRESSED,
     HW_BUTTON_RELEASED,
     HW_LOGIN_INCORRECT,
+    HW_CCO_CHANGED,
+    HW_CCI_CHANGED,
     Homeworks,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.LIGHT]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.LIGHT, Platform.SWITCH]
 
 CONF_COMMAND = "command"
 
@@ -69,6 +71,7 @@ class HomeworksData:
     controller: Homeworks
     controller_id: str
     keypads: dict[str, HomeworksKeypad]
+    switches: dict[str, HomeworksSwitch]
 
 
 @callback
@@ -173,13 +176,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, cleanup))
 
     keypads: dict[str, HomeworksKeypad] = {}
+    switches: dict[str, HomeworksSwitch] = {}
     for key_config in config.get(CONF_KEYPADS, []):
         addr = key_config[CONF_ADDR]
         name = key_config[CONF_NAME]
         keypads[addr] = HomeworksKeypad(hass, controller, controller_id, addr, name)
 
+    for switch_config in config.get(CONF_SWITCHES, []):
+        addr = switch_config[CONF_ADDR]
+        name = switch_config[CONF_NAME]
+        switches[addr] = HomeworksSwitch(hass, controller, controller_id, addr, name)
+
     hass.data[DOMAIN][entry.entry_id] = HomeworksData(
-        controller, controller_id, keypads
+        controller, controller_id, keypads, switches
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -196,6 +205,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data: HomeworksData = hass.data[DOMAIN].pop(entry.entry_id)
     for keypad in data.keypads.values():
         keypad.unsubscribe()
+    for switch in data.switches.values():
+        switch.unsubscribe()
 
     await hass.async_add_executor_job(data.controller.stop)
 

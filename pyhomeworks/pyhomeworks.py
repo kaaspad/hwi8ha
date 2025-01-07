@@ -26,6 +26,8 @@ def _p_button(arg):     return int(arg)
 def _p_enabled(arg):    return arg == "enabled"
 def _p_level(arg):      return int(arg)
 def _p_ledstate(arg):   return [int(num) for num in arg]
+def _p_cco_state(arg): return arg == "1"
+def _p_cci_state(arg): return arg == "1"
 
 def _norm(x): return (x, _p_address, _p_button)
 
@@ -38,6 +40,8 @@ HW_BUTTON_RELEASED = "button_released"
 HW_KEYPAD_ENABLE_CHANGED = "keypad_enable_changed"
 HW_KEYPAD_LED_CHANGED = "keypad_led_changed"
 HW_LIGHT_CHANGED = "light_changed"
+HW_CCO_CHANGED = "cco_changed"
+HW_CCI_CHANGED = "cci_changed"
 HW_LOGIN_INCORRECT = "login_incorrect"
 
 ACTIONS = {
@@ -56,6 +60,8 @@ ACTIONS = {
     "KLS":      (HW_KEYPAD_LED_CHANGED, _p_address, _p_ledstate),
     "DL":       (HW_LIGHT_CHANGED, _p_address, _p_level),
     "KES":      (HW_KEYPAD_ENABLE_CHANGED, _p_address, _p_enabled),
+    "CCOS":     (HW_CCO_CHANGED, _p_address, _p_cco_state),
+    "CCIS":     (HW_CCI_CHANGED, _p_address, _p_cci_state),
 }
 
 IGNORED = {
@@ -148,6 +154,22 @@ class Homeworks(Thread):
     def request_dimmer_level(self, addr):
         """Request the controller to return brightness."""
         self._send(f"RDL, {addr}")
+
+    def cco_open(self, addr):
+        """Open a Contact Closure Output."""
+        self._send(f"CCOR, {addr}")
+
+    def cco_close(self, addr):
+        """Close a Contact Closure Output."""
+        self._send(f"CCOC, {addr}")
+
+    def request_cco_state(self, addr):
+        """Request the state of a Contact Closure Output."""
+        self._send(f"RCCOS, {addr}")
+
+    def request_cci_state(self, addr):
+        """Request the state of a Contact Closure Input."""
+        self._send(f"RCCIS, {addr}")
 
     def run(self):
         """Read and dispatch messages from the controller."""
