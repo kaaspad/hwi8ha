@@ -514,8 +514,8 @@ OPTIONS_FLOW = {
             "add_light",
             "select_edit_light",
             "remove_light",
-            "auto_discover": "Auto-discover devices",
-            "select_discovered": "Select discovered devices",
+            "auto_discover",
+            "select_discovered",
         ]
     ),
     "add_keypad": SchemaFlowFormStep(
