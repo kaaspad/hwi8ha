@@ -14,7 +14,7 @@ import select
 import socket
 from threading import Thread
 import time
-from typing import Final
+from typing import Final, Any, Callable, Optional
 
 from . import exceptions
 
@@ -93,13 +93,21 @@ class Homeworks(Thread):
         self._port = port
         self._login = login
         self._callback = callback
+        self._additional_callbacks = []
         self._socket = None
-
         self._running = False
 
     def connect(self):
         """Connect to controller using host, port."""
         self._connect(False)
+
+    def register_callback(self, callback):
+        """Register an additional callback for messages."""
+        self._additional_callbacks.append(callback)
+
+    def unregister_callback(self, callback):
+        """Remove a registered callback."""
+        self._additional_callbacks.remove(callback)
 
     def _connect(self, callback_on_login_error):
         """Connect to controller using host, port."""
@@ -216,6 +224,8 @@ class Homeworks(Thread):
                 args = [parser(arg) for parser, arg in
                         zip(action[1:], raw_args[1:])]
                 self._callback(action[0], args)
+                for callback in self._additional_callbacks:
+                    callback(action[0], args)
             else:
                 _LOGGER.warning("Not handling: %s", raw_args)
         except ValueError:

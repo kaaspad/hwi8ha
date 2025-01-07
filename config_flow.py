@@ -56,6 +56,7 @@ from .const import (
 )
 from .pyhomeworks import exceptions as hw_exceptions
 from .pyhomeworks.pyhomeworks import Homeworks
+from .pyhomeworks.discovery import HomeworksDiscovery, DiscoveredDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -477,6 +478,8 @@ OPTIONS_FLOW = {
             "add_light",
             "select_edit_light",
             "remove_light",
+            "auto_discover": "Auto-discover devices",
+            "select_discovered": "Select discovered devices",
         ]
     ),
     "add_keypad": SchemaFlowFormStep(
@@ -543,6 +546,19 @@ OPTIONS_FLOW = {
         partial(get_remove_keypad_light_schema, key=CONF_DIMMERS),
         suggested_values=None,
         validate_user_input=partial(validate_remove_keypad_light, key=CONF_DIMMERS),
+    ),
+    "auto_discover": SchemaFlowFormStep(
+        {
+            vol.Optional("start_addr", default="[00:00:00:00]"): str,
+            vol.Optional("end_addr", default="[99:99:99:99]"): str,
+        },
+        suggested_values=None,
+        validate_user_input=async_step_auto_discover,
+    ),
+    "select_discovered": SchemaFlowFormStep(
+        get_select_discovered_schema,
+        suggested_values=None,
+        validate_user_input=validate_select_discovered,
     ),
 }
 
@@ -637,6 +653,74 @@ class HomeworksConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             data_schema=DATA_SCHEMA_ADD_CONTROLLER,
             errors=errors,
         )
+
+    async def async_step_auto_discover(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle auto-discovery of devices."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="auto_discover",
+                data_schema=vol.Schema({
+                    vol.Optional("start_addr", default="[00:00:00:00]"): str,
+                    vol.Optional("end_addr", default="[99:99:99:99]"): str,
+                }),
+            )
+
+        # Start discovery process
+        data: HomeworksData = self.hass.data[DOMAIN][self.config_entry.entry_id]
+        discovery = HomeworksDiscovery(data.controller)
+        
+        discovered = await discovery.discover_devices(
+            start_addr=user_input["start_addr"],
+            end_addr=user_input["end_addr"],
+        )
+
+        # Store discovered devices for the next step
+        self.discovered_devices = discovered
+        return await self.async_step_select_discovered()
+
+    async def async_step_select_discovered(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle selection of discovered devices."""
+        if user_input is None:
+            devices = []
+            for addr, device in self.discovered_devices.items():
+                devices.append({
+                    "addr": addr,
+                    "type": device.device_type,
+                    "name": device.name,
+                    "selected": device.selected
+                })
+            
+            return self.async_show_form(
+                step_id="select_discovered",
+                data_schema=vol.Schema({
+                    vol.Required(f"device_{addr}"): bool
+                    for addr in self.discovered_devices
+                }),
+            )
+
+        # Process selected devices
+        for key, value in user_input.items():
+            if key.startswith("device_"):
+                addr = key[7:]  # Remove "device_" prefix
+                device = self.discovered_devices[addr]
+                if value:  # If device is selected
+                    if device.device_type == "light":
+                        self.options[CONF_DIMMERS].append({
+                            CONF_ADDR: addr,
+                            CONF_NAME: device.name,
+                            CONF_RATE: DEFAULT_FADE_RATE
+                        })
+                    elif device.device_type in ["cco", "cci"]:
+                        self.options[CONF_SWITCHES].append({
+                            CONF_ADDR: addr,
+                            CONF_NAME: device.name
+                        })
+
+        return self.async_create_entry(title="", data=self.options)
 
     @staticmethod
     @callback
